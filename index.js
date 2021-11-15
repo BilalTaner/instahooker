@@ -13,7 +13,7 @@ module.exports.startHook = async (setting = { username: "", cookie: "", timeout:
 
     fetch(`https://www.instagram.com/${options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
         const data = await response.json();
-        if (!data) return console.log("WARN: User not found!");
+        if (!data.graphql) return console.log("WARN: User not found!");
 
         const id = data.graphql.user.id,
             fetchedData = await fetch(`https://www.instagram.com/graphql/query/?query_hash=8c2a529969ee035a5063f2fc8602a0fd&variables={"id":"${id}","first":"5000"}`, { headers: { cookie: options.cookie } }).then(res => res.json()),
