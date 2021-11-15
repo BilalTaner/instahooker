@@ -124,5 +124,5 @@ async function sleep(second) {
 }
 
 process.on("unhandledRejection", (error) => {
-    return client.log("ERROR: Something went wrong " + error);
+    return console.log("ERROR: Something went wrong " + error);
 });
