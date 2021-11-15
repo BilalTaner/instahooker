@@ -106,21 +106,21 @@ function getData(fetch, posts) {
                 let i = 0;
                 for (let sidecar of node.edge_sidecar_to_children.edges) {
                     if (sidecar.node.video_url) {
-                        posts.push({ name: `video_${node.shortcode}_${i}_${node.id}.mp4`, url: sidecar.node.video_url });
+                        posts.push({ name: `instaHooker_video_${node.shortcode}_${i}_${node.id}.mp4`, url: sidecar.node.video_url });
                     } else {
-                        posts.push({ name: `image_${node.shortcode}_${i}_${node.id}.png`, url: sidecar.node.display_url });
+                        posts.push({ name: `instaHooker_image_${node.shortcode}_${i}_${node.id}.png`, url: sidecar.node.display_url });
                     }
                     i++;
                 }
                 break;
 
             case "GraphVideo":
-                posts.push({ name: `video_${node.shortcode}_0_${node.id}.mp4`, url: node.video_url });
+                posts.push({ name: `instaHooker_video_${node.shortcode}_0_${node.id}.mp4`, url: node.video_url });
                 break;
 
             case "GraphImage":
                 if (!node.edge_sidecar_to_children) {
-                    posts.push({ name: `image_${node.shortcode}_0_${node.id}.png`, url: node.display_url });
+                    posts.push({ name: `instaHooker_image_${node.shortcode}_0_${node.id}.png`, url: node.display_url });
                 }
 
         }
