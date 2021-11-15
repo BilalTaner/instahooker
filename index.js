@@ -66,17 +66,19 @@ module.exports.startHook = async (setting = { username: "", cookie: "", timeout:
 
 async function getRemoteFile(PostArray, output, ms) {
     if (!fs.existsSync(output)) {
-        await fs.mkdirSync(output, {
+        fs.mkdirSync(output, {
             recursive: true
         });
     }
-    console.log(PostArray)
-    let i = 0;
-    for (const x of PostArray.filter(x => x.url.startsWith("https://instagram.fesb4"))) {
 
-        await fetch(x.url).then(res => res.buffer()).then(image => {
+    let i = 0;
+    for (const x of PostArray.filter(x => x.url.startsWith("https://instagram"))) {
+
+        await fetch(x.url).then(res => res.buffer()).then(async image => {
+
             fs.writeFileSync(output + x.name, image, (error) => { console.log(error) });
             process.stdout.write(`\rINFO: Media "${x.name}" downloaded. PROGRESS: (${i + 1}/${PostArray.length})`);
+
         });
 
         await sleep(ms);
@@ -108,13 +110,12 @@ function getData(fetch, posts) {
                     } else {
                         posts.push({ name: `image_${node.shortcode}_${i}_${node.id}.png`, url: sidecar.node.display_url });
                     }
-                    i = i + 1;
+                    i++;
                 }
                 break;
 
             case "GraphVideo":
-                if (node.video_url.startsWith("https://instagram.fesb4"))
-                    posts.push({ name: `video_${node.shortcode}_0_${node.id}.mp4`, url: node.video_url });
+                posts.push({ name: `video_${node.shortcode}_0_${node.id}.mp4`, url: node.video_url });
                 break;
 
             case "GraphImage":
