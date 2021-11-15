@@ -31,8 +31,8 @@ module.exports.startHook = async (setting = { username: "", cookie: "", timeout:
             getData(fetchedData, posts);
 
             console.log("READY: Posts are starting to fetch...");
-            sleep(1500);
-            console.log(`READY: Fetcing data from instagram... PROGRESS: ${mediaCount > 50 ? 50 : mediaCount}/${mediaCount} (${posts.length} media)`);
+            await sleep(1000);
+            process.stdout.write(`\rREADY: Fetcing data from instagram... PROGRESS: ${mediaCount > 50 ? 50 : mediaCount}/${mediaCount} (${posts.length} media)`);
 
 
             if (mediaCount > 50) {
@@ -43,7 +43,7 @@ module.exports.startHook = async (setting = { username: "", cookie: "", timeout:
 
                     getData(fetchingMediaFor, posts);
 
-                    console.log(`READY: Fetcing data from instagram... PROGRESS: ${i + 1 >= Math.floor(mediaCount / 50) ? mediaCount : (i + 2) * 50}/${mediaCount} (${posts.length} media)`);
+                    process.stdout.write(`\rREADY: Fetcing data from instagram... PROGRESS: ${i + 1 >= Math.floor(mediaCount / 50) ? mediaCount : (i + 2) * 50}/${mediaCount} (${posts.length} media)`);
 
                     after = fetchingMediaFor.data.user.edge_owner_to_timeline_media.page_info.end_cursor;
                 }
@@ -54,7 +54,7 @@ module.exports.startHook = async (setting = { username: "", cookie: "", timeout:
 
             //Show info for download
             await sleep(1000);
-            console.log("READY: All posts have been fetched, preparing to download.");
+            console.log("\nREADY: All posts have been fetched, preparing to download.");
             await sleep(1000);
             console.log("READY: Download Starting...");
             await sleep(2000);
@@ -130,3 +130,7 @@ function getData(fetch, posts) {
 async function sleep(second) {
     await new Promise((resolve) => setTimeout(resolve, second));
 }
+
+process.on("unhandledRejection", (error) => {
+    return client.log("ERROR: Something went wrong " + error);
+});
