@@ -65,10 +65,8 @@ async function getRemoteFile(PostArray, output, ms) {
             recursive: true
         });
     }
-
     let i = 0;
-    for (const x of PostArray.filter(x => x.url.startsWith("https://instagram"))) {
-
+    PostArray.filter(x => x.url.startsWith("https://instagram")).forEach(async (x) => {
         await fetch(x.url).then(res => res.buffer()).then(async image => {
 
             fs.writeFileSync(output + x.name, image, (error) => { console.log(error) });
@@ -76,16 +74,15 @@ async function getRemoteFile(PostArray, output, ms) {
 
         });
 
-        await sleep(ms);
-
         i++;
+        await sleep(ms);
 
         if (i === PostArray.length) {
             console.log(`\nCOMPLETE: Download finished! Statics: Video Count: ${PostArray.filter(x => x.name.endsWith(".mp4")).length} - Photo Count: ${PostArray.filter(x => x.name.endsWith(".png")).length}`);
             //advertisement
             return console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Thanks to Tuhana (tuhana) for helping cli\n> Type -h for help menu");
         };
-    }
+    })
 }
 
 function getData(fetch, posts) {
