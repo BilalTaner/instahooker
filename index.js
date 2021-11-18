@@ -5,6 +5,7 @@ const baseURL = `https://www.instagram.com/`;
 const baseURLQuery = `https://www.instagram.com/graphql/query/?query_hash=8c2a529969ee035a5063f2fc8602a0fd&variables=`;
 
 const postRegex = /(https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([^\/?#&]+)).*/;
+const profileRegex = /(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)/igm;
 
 module.exports.ProfileHooker = async (setting = { username: "", cookie: "", timeout: 50, output: "" }) => {
     const options = {
@@ -16,7 +17,7 @@ module.exports.ProfileHooker = async (setting = { username: "", cookie: "", time
 
     const posts = [];
 
-    fetch(`${baseURL}${options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
+    fetch(`${baseURL}${options.username.startsWith(baseURL) ? profileRegex.exec(options.username)[1] : options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
         const data = await response.json();
         if (!data.graphql) return console.log("WARN: User not found!");
 
