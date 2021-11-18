@@ -1,38 +1,42 @@
 const fs = require("fs");
 const fetch = require("node-fetch");
 
-const baseURL = `https://www.instagram.com/`;
-const baseURLQuery = `https://www.instagram.com/graphql/query/?query_hash=8c2a529969ee035a5063f2fc8602a0fd&variables=`;
+const baseURL = "https://www.instagram.com/";
+const baseURLFeed = "https://i.instagram.com/api/v1/feed/"
+const baseURLQuery = "https://www.instagram.com/graphql/query/?query_hash=8c2a529969ee035a5063f2fc8602a0fd&variables=";
 
-const postRegex = /(https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([^\/?#&]+)).*/;
-const profileRegex = /(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)/igm;
+const postRegex = /(https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([^\/?#&]+)).*/,
+    highlightRegex = /https?:\/\/(?:www\.)?instagram\.com\/stories\/highlights\/(.*?)\//,
+    profileRegex = /(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)/igm;
 
-module.exports.ProfileHooker = async (setting = { username: "", cookie: "", timeout: 50, output: "" }) => {
+module.exports.ProfileHooker = async (settings = { username: "", cookie: "", timeout: 50, output: "" }) => {
     const options = {
-        username: setting.username,
-        cookie: `sessionid=${setting.cookie};`,
-        timeout: setting.timeout ? setting.timeout : 50,
-        output: setting.output || "instahooker-out"
+        username: settings.username,
+        cookie: `sessionid=${settings.cookie};`,
+        timeout: settings.timeout ? settings.timeout : 50,
+        output: settings.output || "instahooker-out"
     }
 
     const posts = [];
 
     fetch(`${baseURL}${options.username.startsWith(baseURL) ? profileRegex.exec(options.username)[1] : options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
         const data = await response.json();
-        if (!data.graphql) return console.log("WARN: User not found!");
+
+        if (!data.graphql) return logger("warn", "User not found!");
 
         const id = data.graphql.user.id,
             fetchedData = await fetch(`${baseURLQuery}{"id":"${id}","first":"5000"}`, { headers: { cookie: options.cookie } }).then(res => res.json()),
             mediaCount = fetchedData.data.user.edge_owner_to_timeline_media.count;
 
-        if (!mediaCount) return console.log("WARN: There are no posts on the account you entered!");
+        if (!mediaCount)
+            return logger("warn", "There are no posts on the account you entered!");
 
         let after = fetchedData.data.user.edge_owner_to_timeline_media.page_info.end_cursor;
 
         getData(fetchedData, posts);
 
-        console.log("READY: Posts are starting to fetch...");
-        await sleep(500);
+        await logger("fetchReady");
+
         process.stdout.write(`\rREADY: Fetcing data from instagram... PROGRESS: ${mediaCount > 50 ? 50 : mediaCount}/${mediaCount} (${posts.length} media)`);
 
 
@@ -51,25 +55,22 @@ module.exports.ProfileHooker = async (setting = { username: "", cookie: "", time
         }
 
         //Check the posts array
-        if (!posts.length && data.graphql.user.is_private) return console.log("WARN: The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
+        if (!posts.length && data.graphql.user.is_private)
+            return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
 
         //Show info for download
-        await sleep(800);
-        console.log("\nREADY: All posts have been fetched, preparing to download.");
-        await sleep(800);
-        console.log("READY: Download Starting...");
-        await sleep(1300);
+        await logger("ready");
         await getRemoteFile(posts, `./${options.output}/`, options.timeout);
     })
 }
 
 
-module.exports.PostHooker = async (setting = { url: "", cookie: "", timeout: 50, output: "" }) => {
+module.exports.PostHooker = async (settings = { url: "", cookie: "", timeout: 50, output: "" }) => {
     const options = {
-        url: setting.url,
-        cookie: `sessionid=${setting.cookie};`,
-        timeout: setting.timeout ? setting.timeout : 50,
-        output: setting.output || "instahooker-out"
+        url: settings.url,
+        cookie: `sessionid=${settings.cookie};`,
+        timeout: settings.timeout ? settings.timeout : 50,
+        output: settings.output || "instahooker-out"
     }
 
     const posts = [];
@@ -80,17 +81,91 @@ module.exports.PostHooker = async (setting = { url: "", cookie: "", timeout: 50,
     getData(data, posts, "post");
 
     //Check the posts array
-    if (!posts.length && data.graphql.user.is_private) return console.log("WARN: The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
+    if (!posts.length && data.graphql.user.is_private)
+        return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
 
     //Show info for download
-    await sleep(300);
-    console.log("READY: All contents have been fetched, preparing to download.");
-    await sleep(300);
-    console.log("READY: Download Starting...");
-    await sleep(800);
+    await logger("ready");
     await getRemoteFile(posts, `./${options.output}/`, options.timeout);
 
 }
+
+
+module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeout: 50, output: "", highlight: false }) => {
+
+    const options = {
+        username: settings.username,
+        cookie: `sessionid=${settings.cookie};`,
+        timeout: settings.timeout ? settings.timeout : 50,
+        output: settings.output || "instahookerStory-out",
+        highlight: settings.highlight || false
+    }
+
+    const posts = [];
+
+    const headers = {
+        headers: {
+            cookie: options.cookie,
+            'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 105.0.0.11.118 (iPhone11,8; iOS 12_3_1; en_US; en-US; scale=2.00; 828x1792; 165586599)'
+        }
+    }
+
+    if (options.highlight) {
+
+        //Checking if its highlight
+        if (!options.username.startsWith("https://www.instagram.com/stories/highlights/")) return logger("warn", "Use '--story' flag for fetching stories!")
+
+        await logger("fetchReady");
+
+        const hightlight = await fetch(`${baseURLFeed}reels_media/?reel_ids=highlight:${options.username.startsWith("https://www.instagram.com/stories/highlights/") ? highlightRegex.exec(options.username)[1] : options.username}`, headers);
+
+        const highlightStories = await hightlight.json();
+
+        getData(Object.values(highlightStories.reels)[0], posts, "story");
+
+        //Checking array for story is exits
+        if (!posts.length)
+            return logger("warn", "The account you want to reach is private or there are no highlight on the url you entered, so media cannot be downloaded!");
+
+        //Show info for download
+        await logger("ready");
+        return await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+
+    } else {
+
+        //Checking if its highlight
+        if (options.username.startsWith("https://www.instagram.com/stories/highlights/")) return logger("warn", "Use '--highlights' flag for fetching highlights!")
+
+        await fetch(`${baseURL}${options.username.startsWith(baseURL) ? profileRegex.exec(options.username)[1] : options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
+            const data = await response.json();
+            if (!data.graphql) return logger("warn", "User not found!")
+
+            const id = data.graphql.user.id;
+
+            await fetch(`${baseURLFeed}reels_tray/`, headers).then(x => x.json()).then(async () => {
+
+                await logger("fetchReady");
+
+                const stories = await fetch(`${baseURLFeed}user/${id}/reel_media/`, headers).then(res => res.json());
+
+                getData(stories, posts, "story");
+
+                //Checking array for story is exits
+                if (!posts.length) {
+                    if (data.graphql.user.is_private) {
+                        return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
+                    }
+                    return logger("warn", "There are no stories on the account you entered!")
+                }
+
+                //Show info for download
+                await logger("ready");
+                return await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+            })
+        });
+    }
+}
+
 
 async function getRemoteFile(PostArray, output, ms) {
     if (!fs.existsSync(output)) {
@@ -104,6 +179,7 @@ async function getRemoteFile(PostArray, output, ms) {
     //i am not using forEach cuz sleep function is not working when i use forEach :(
     for (const x of PostArray.filter(x => x.url.startsWith("https://instagram"))) {
         await fetch(x.url).then(res => res.buffer()).then(async image => {
+
             fs.writeFileSync(output + x.name, image, (error) => { console.log(error) });
             process.stdout.write(`\rINFO: Media "${x.name}" downloaded. PROGRESS: (${i + 1}/${PostArray.length})`);
 
@@ -113,8 +189,8 @@ async function getRemoteFile(PostArray, output, ms) {
         i++;
 
         if (i === PostArray.length) {
-            return console.log(`\nCOMPLETE: Download finished! Statics: Video Count: ${PostArray.filter(x => x.name.endsWith(".mp4")).length} - Photo Count: ${PostArray.filter(x => x.name.endsWith(".png")).length}`)
-                , console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Thanks to Tuhana (tuhana) for helping cli\n> Type -h for help menu");
+            return console.log(`\nCOMPLATE: Download finished! Statics: Video Count: ${PostArray.filter(x => x.name.endsWith(".mp4")).length} - Photo Count: ${PostArray.filter(x => x.name.endsWith(".png")).length}`)
+                , console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Thanks to Tuhana (tuhana) for helping CLI\n> Type -h for help menu");
         };
     }
 }
@@ -122,6 +198,19 @@ async function getRemoteFile(PostArray, output, ms) {
 function getData(fetch, posts, type) {
 
     switch (type) {
+        case "story":
+            fetch.items.forEach((x) => {
+                switch (x.media_type) {
+                    case 1:
+                        posts.push({ name: `instaHookerStory_${x.pk}.png`, url: x.image_versions2.candidates[0].url });
+                        break;
+                    case 2:
+                        posts.push({ name: `instaHookerStory_${x.pk}.mp4`, url: x.video_versions[0].url });
+                        break;
+                }
+            });
+            break;
+
         case "post":
             const node = fetch.graphql.shortcode_media;
             switch (fetch.graphql.shortcode_media.__typename) {
@@ -176,6 +265,25 @@ function getData(fetch, posts, type) {
 
                 }
             })
+    }
+}
+
+async function logger(type, message) {
+    switch (type) {
+        case "warn":
+            console.log(`WARN: ${message}`);
+            break;
+        case "ready":
+            await sleep(500);
+            console.log("READY: All contents have been fetched, preparing to download.");
+            await sleep(500);
+            console.log("READY: Download Starting...");
+            await sleep(800);
+            break;
+        case "fetchReady":
+            console.log("READY: Contents are starting to fetch...");
+            await sleep(300);
+            break;
     }
 }
 
