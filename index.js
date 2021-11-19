@@ -233,6 +233,7 @@ function getData(fetch, posts, type) {
                 case "GraphImage":
                     if (!node.edge_sidecar_to_children)
                         posts.push({ name: `instaHooker_${node.shortcode}_0_${node.id}.png`, url: node.display_url });
+                    break;
             }
             break;
 
