@@ -58,9 +58,12 @@ module.exports.ProfileHooker = async (settings = { username: "", cookie: "", tim
         if (!posts.length && data.graphql.user.is_private)
             return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
 
-        //Show info for download
-        console.log("\n")
-        await logger("ready");
+        //Show info for download (when i use logger func its broken)
+        await sleep(500);
+        console.log("\nREADY: All contents have been fetched, preparing to download.");
+        await sleep(500);
+        console.log("READY: Download Starting...");
+        await sleep(800);
         await getRemoteFile(posts, `./${options.output}/`, options.timeout);
     })
 }
