@@ -59,6 +59,7 @@ module.exports.ProfileHooker = async (settings = { username: "", cookie: "", tim
             return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
 
         //Show info for download
+        console.log("\n")
         await logger("ready");
         await getRemoteFile(posts, `./${options.output}/`, options.timeout);
     })
