@@ -1,16 +1,16 @@
 {
-  "name": "new",
-  "version": "1.0.0",
-  "description": "Fetching posts from instagram.",
-  "main": "index.js",
   "author": "shynox",
-  "license": "MIT",
   "dependencies": {
     "commander": "^8.3.0",
     "fs": "^0.0.1-security",
     "node-fetch": "2"
   },
+  "description": "Fetching posts from instagram.",
   "devDependencies": {
     "@types/node-fetch": "^3.0.3"
-  }
+  },
+  "license": "MIT",
+  "main": "index.js",
+  "name": "new",
+  "version": "1.0.0"
 }
