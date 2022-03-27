@@ -21,7 +21,7 @@ program
     const options = program.opts();
 
     //advertisement
-    console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Thanks to Tuhana (tuhana) for helping CLI\n> Type -h for help menu");
+    console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Type -h for help menu");
 
     if (!options.sid)
         return console.log("You must enter a sessionid for hooking images!")

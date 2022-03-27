@@ -85,7 +85,7 @@ module.exports.PostHooker = async (settings = { url: "", cookie: "", timeout: 50
     getData(data, posts, "post");
 
     //Check the posts array
-    if (!posts.length && data.graphql.user.is_private)
+    if (!posts.length && data.items[0].user.is_private)
         return logger("warn", "The account you want to reach is private and you don't follow it, so media cannot be downloaded!");
 
     //Show info for download
@@ -194,7 +194,7 @@ async function getRemoteFile(PostArray, output, ms) {
 
         if (i === PostArray.length) {
             return console.log(`\nCOMPLATE: Download finished! Statics: Video Count: ${PostArray.filter(x => x.name.endsWith(".mp4")).length} - Photo Count: ${PostArray.filter(x => x.name.endsWith(".png")).length}`)
-                , console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Thanks to Tuhana (tuhana) for helping CLI\n> Type -h for help menu");
+                , console.log("> InstaHooker CLI - By Bilal Taner (shynox)\n> Type -h for help menu");
         };
     }
 }
@@ -216,28 +216,24 @@ function getData(fetch, posts, type) {
             break;
 
         case "post":
-            const node = fetch.graphql.shortcode_media;
-            switch (fetch.graphql.shortcode_media.__typename) {
-                case "GraphSidecar":
-                    let i = 0;
-                    node.edge_sidecar_to_children.edges.forEach(sidecar => {
-                        if (sidecar.node.video_url) {
-                            posts.push({ name: `instaHooker_${node.shortcode}_${i}_${node.id}.mp4`, url: sidecar.node.video_url });
-                        } else {
-                            posts.push({ name: `instaHooker_${node.shortcode}_${i}_${node.id}.png`, url: sidecar.node.display_url });
-                        }
-                        i++;
-                    })
-                    break;
-
-                case "GraphVideo":
-                    posts.push({ name: `instaHooker_${node.shortcode}_0_${node.id}.mp4`, url: node.video_url });
-                    break;
-
-                case "GraphImage":
-                    if (!node.edge_sidecar_to_children)
-                        posts.push({ name: `instaHooker_${node.shortcode}_0_${node.id}.png`, url: node.display_url });
-                    break;
+            const node = fetch.items[0];
+            if (node.carousel_media) {
+                let i = 0;
+                node.carousel_media.forEach(sidecar => {
+                    if (sidecar.media_type === 2) {
+                        posts.push({ name: `instaHooker_${sidecar.carousel_parent_id}_${i}_${node.code}.mp4`, url: sidecar.video_versions[0].url });
+                    } else {
+                        posts.push({ name: `instaHooker_${sidecar.carousel_parent_id}_${i}_${node.code}.png`, url: sidecar.image_versions2.candidates[0].url });
+                    }
+                    i++;
+                })
+                break;
+            } else {
+                if (node.video_versions) {
+                    posts.push({ name: `instaHooker_${node.id}_0_${node.code}.mp4`, url: node.video_versions[0].url });
+                } else if (node.image_versions2.candidates[0]) {
+                    posts.push({ name: `instaHooker_${node.id}_0_${node.code}.png`, url: node.image_versions2.candidates[0].url });
+                }
             }
             break;
 
@@ -296,6 +292,3 @@ async function sleep(second) {
     await new Promise((resolve) => setTimeout(resolve, second));
 }
 
-process.on("unhandledRejection", (error) => {
-    return console.log("ERROR: Something went wrong " + error);
-});
