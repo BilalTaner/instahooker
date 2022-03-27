@@ -230,10 +230,8 @@ function getData(fetch, posts, type) {
                 break;
             } else {
                 if (node.video_versions) {
-                    console.log(node)
                     posts.push({ name: `instaHooker_${node.code}_0_${node.pk}.mp4`, url: node.video_versions[0].url });
                 } else if (node.image_versions2.candidates[0]) {
-                    console.log(node)
                     posts.push({ name: `instaHooker_${node.code}_0_${node.pk}.png`, url: node.image_versions2.candidates[0].url });
                 }
             }
