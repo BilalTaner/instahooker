@@ -221,18 +221,20 @@ function getData(fetch, posts, type) {
                 let i = 0;
                 node.carousel_media.forEach(sidecar => {
                     if (sidecar.media_type === 2) {
-                        posts.push({ name: `instaHooker_${sidecar.carousel_parent_id}_${i}_${node.code}.mp4`, url: sidecar.video_versions[0].url });
+                        posts.push({ name: `instaHooker_${sidecar.code}_${i}_${node.pk}.mp4`, url: sidecar.video_versions[0].url });
                     } else {
-                        posts.push({ name: `instaHooker_${sidecar.carousel_parent_id}_${i}_${node.code}.png`, url: sidecar.image_versions2.candidates[0].url });
+                        posts.push({ name: `instaHooker_${sidecar.code}_${i}_${node.pk}.png`, url: sidecar.image_versions2.candidates[0].url });
                     }
                     i++;
                 })
                 break;
             } else {
                 if (node.video_versions) {
-                    posts.push({ name: `instaHooker_${node.id}_0_${node.code}.mp4`, url: node.video_versions[0].url });
+                    console.log(node)
+                    posts.push({ name: `instaHooker_${node.code}_0_${node.pk}.mp4`, url: node.video_versions[0].url });
                 } else if (node.image_versions2.candidates[0]) {
-                    posts.push({ name: `instaHooker_${node.id}_0_${node.code}.png`, url: node.image_versions2.candidates[0].url });
+                    console.log(node)
+                    posts.push({ name: `instaHooker_${node.code}_0_${node.pk}.png`, url: node.image_versions2.candidates[0].url });
                 }
             }
             break;
@@ -292,3 +294,6 @@ async function sleep(second) {
     await new Promise((resolve) => setTimeout(resolve, second));
 }
 
+process.on("unhandledRejection", (error) => {
+    return console.log("ERROR: Something went wrong " + error);
+});
