@@ -7,14 +7,15 @@ const baseURLQuery = "https://www.instagram.com/graphql/query/?query_hash=8c2a52
 
 const postRegex = /(https?:\/\/(?:www\.)?instagram\.com\/(p|reel|tv)\/([^\/?#&]+)).*/,
     highlightRegex = /https?:\/\/(?:www\.)?instagram\.com\/stories\/highlights\/(.*?)\//,
+    storyRegex = /https?:\/\/(?:www\.)?instagram\.com\/stories\/(.*?)\//,
     profileRegex = /(?<=instagram.com\/)[A-Za-z0-9_.]+/igm;
 
-module.exports.ProfileHooker = async (settings = { username: "", cookie: "", timeout: 50, output: "" }) => {
+module.exports.ProfileHooker = async (settings = { username: "", cookie: "", timeout: 20, output: "" }) => {
     const options = {
         username: settings.username,
         cookie: `sessionid=${settings.cookie};`,
-        timeout: settings.timeout ? settings.timeout : 50,
-        output: settings.output || "instahooker-out"
+        timeout: settings.timeout ? settings.timeout : 20,
+        output: settings.output
     }
 
     const posts = [];
@@ -38,7 +39,6 @@ module.exports.ProfileHooker = async (settings = { username: "", cookie: "", tim
         await logger("fetchReady");
 
         process.stdout.write(`\rREADY: Fetcing data from instagram... PROGRESS: ${mediaCount > 50 ? 50 : mediaCount}/${mediaCount} (${posts.length} media)`);
-
 
         if (mediaCount > 50) {
             for (let i = 0; i < Math.floor(mediaCount / 50); i++) {
@@ -64,16 +64,16 @@ module.exports.ProfileHooker = async (settings = { username: "", cookie: "", tim
         await sleep(500);
         console.log("READY: Download Starting...");
         await sleep(800);
-        await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+        await getRemoteFile(posts, `./${options.output || data.graphql.user.username}/instahooker-profile/`, options.timeout);
     })
 }
 
 
-module.exports.PostHooker = async (settings = { url: "", cookie: "", timeout: 50, output: "" }) => {
+module.exports.PostHooker = async (settings = { url: "", cookie: "", timeout: 20, output: "" }) => {
     const options = {
         url: settings.url,
         cookie: `sessionid=${settings.cookie};`,
-        timeout: settings.timeout ? settings.timeout : 50,
+        timeout: settings.timeout ? settings.timeout : 20,
         output: settings.output || "instahooker-out"
     }
 
@@ -90,18 +90,18 @@ module.exports.PostHooker = async (settings = { url: "", cookie: "", timeout: 50
 
     //Show info for download
     await logger("ready");
-    await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+    await getRemoteFile(posts, `./${options.output || data.user.username}/instahooker-posts/`, options.timeout);
 
 }
 
 
-module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeout: 50, output: "", highlight: false }) => {
+module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeout: 20, output: "", highlight: false }) => {
 
     const options = {
         username: settings.username,
         cookie: `sessionid=${settings.cookie};`,
-        timeout: settings.timeout ? settings.timeout : 50,
-        output: settings.output || "instahookerStory-out",
+        timeout: settings.timeout ? settings.timeout : 20,
+        output: settings.output,
         highlight: settings.highlight || false
     }
 
@@ -115,9 +115,6 @@ module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeo
     }
 
     if (options.highlight) {
-
-        //Checking if its highlight
-        if (!options.username.startsWith("https://www.instagram.com/stories/highlights/")) return logger("warn", "Use '--story' flag for fetching stories!")
 
         await logger("fetchReady");
 
@@ -133,14 +130,14 @@ module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeo
 
         //Show info for download
         await logger("ready");
-        return await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+        return await getRemoteFile(posts, `./${options.output || Object.values(highlightStories.reels)[0].user.username}/instahooker-highlight/`, options.timeout);
 
     } else {
 
         //Checking if its highlight
         if (options.username.startsWith("https://www.instagram.com/stories/highlights/")) return logger("warn", "Use '--highlights' flag for fetching highlights!")
 
-        await fetch(`${baseURL}${options.username.startsWith(baseURL) ? profileRegex.exec(options.username)[1] : options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
+        await fetch(`${baseURL}${options.username.startsWith("https://www.instagram.com/stories/") ? storyRegex.exec(options.username)[1] : options.username.startsWith(baseURL) ? profileRegex.exec(options.username)[0] : options.username}/?__a=1`, { headers: { cookie: options.cookie } }).then(async response => {
             const data = await response.json();
             if (!data.graphql) return logger("warn", "User not found!")
 
@@ -164,7 +161,7 @@ module.exports.StoryHooker = async (settings = { username: "", cookie: "", timeo
 
                 //Show info for download
                 await logger("ready");
-                return await getRemoteFile(posts, `./${options.output}/`, options.timeout);
+                return await getRemoteFile(posts, `./${options.output || data.graphql.user.username}/instahooker-story/`, options.timeout);
             })
         });
     }
@@ -293,5 +290,5 @@ async function sleep(second) {
 }
 
 process.on("unhandledRejection", (error) => {
-    return console.log("ERROR: Something went wrong " + error);
+    return console.log("ERROR: Something went wrong. Please recheck the values ​​you entered");
 });
