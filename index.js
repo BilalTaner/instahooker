@@ -30,7 +30,7 @@ class InstagramDumper {
      */
     getHeader() {
         return {
-            "cookie": `sessionid=${this.cookie};`,
+            "cookie": `sessionid=${this.cookie}; ds_user_id=${decodeURIComponent(this.cookie).split(":")[0]}`,
             "user-agent": 'Mozilla/5.0 (iPhone; CPU iPhone OS 12_3_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 105.0.0.11.118 (iPhone11,8; iOS 12_3_1; en_US; en-US; scale=2.00; 828x1792; 165586599)'
         }
     }
@@ -195,7 +195,7 @@ class InstagramDumper {
     }
 
     async ProfileDumper() {
-        await fetch(`${baseURL}${this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1`, { headers: this.getHeader() }).then(async response => {
+        await fetch(`${baseURL}${this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1&__d=dis`, { headers: this.getHeader() }).then(async response => {
             const data = await response.json();
 
             if (!data.graphql) return await this.log("warnUserNotFound");
@@ -269,7 +269,7 @@ class InstagramDumper {
 
         } else {
 
-            await fetch(`${baseURL}${this.input.startsWith("https://www.instagram.com/stories/") ? storyRegex.exec(this.input)[1] : this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1`, { headers: this.getHeader() }).then(async response => {
+            await fetch(`${baseURL}${this.input.startsWith("https://www.instagram.com/stories/") ? storyRegex.exec(this.input)[1] : this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1&__d=dis`, { headers: this.getHeader() }).then(async response => {
                 const data = await response.json();
                 if (!data.graphql) return this.log("warnUserNotFound");
 
@@ -303,7 +303,7 @@ class InstagramDumper {
     async PostDumper() {
         await this.log("fetchReady", 200);
 
-        const data = await fetch(`${baseURL}/p/${this.input.startsWith(baseURL) ? postRegex.exec(this.input)[3] : this.input}/?__a=1`, { headers: this.getHeader() })
+        const data = await fetch(`${baseURL}/p/${this.input.startsWith(baseURL) ? postRegex.exec(this.input)[3] : this.input}/?__a=1&__d=dis`, { headers: this.getHeader() })
             .then(res => res.json());
 
         this.getData(data, posts, "post");
