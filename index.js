@@ -196,6 +196,7 @@ class InstagramDumper {
 
     async ProfileDumper() {
         await fetch(`${baseURL}${this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1&__d=dis`, { headers: this.getHeader() }).then(async response => {
+
             const data = await response.json();
 
             if (!data.graphql) return await this.log("warnUserNotFound");
@@ -268,8 +269,8 @@ class InstagramDumper {
             return await this.getRemoteFile(posts, `./${this.output || Object.values(highlightStories.reels)[0].user.username}/instahooker-highlight/`, this.timeout);
 
         } else {
-
             await fetch(`${baseURL}${this.input.startsWith("https://www.instagram.com/stories/") ? storyRegex.exec(this.input)[1] : this.input.startsWith(baseURL) ? profileRegex.exec(this.input)[0] : this.input}/?__a=1&__d=dis`, { headers: this.getHeader() }).then(async response => {
+
                 const data = await response.json();
                 if (!data.graphql) return this.log("warnUserNotFound");
 
